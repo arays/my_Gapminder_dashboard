@@ -1,0 +1,195 @@
+---
+title: "Gapminder | Life expectancy 2007"
+format: dashboard
+theme: lux
+---
+##
+
+```{r}
+if(!require("pacman")) install.packages("pacman")
+pacman::p_load(
+  tidyverse,
+  gapminder, 
+  plotly,
+  highcharter, 
+  bslib,
+  bsicons,
+  shiny,
+  reactable,
+  rnaturalearth, 
+  plotly,
+  countrycode,
+  htmltools
+)
+
+```
+
+```{r}
+gap_07 <- gapminder %>% 
+  filter(year==2007)
+
+```
+
+```{r}
+highest_life_expect_county <- gap_07 %>% 
+  arrange(-lifeExp) %>% 
+  head(1) %>% 
+  pull(country)
+
+highest_life_expect_value <- gap_07 %>% 
+  arrange(-lifeExp) %>% 
+  head(1) %>% 
+  pull(lifeExp) %>% 
+  round(1)
+```
+
+
+```{r}
+lowest_life_exp_county <- gap_07 %>% 
+  arrange(lifeExp) %>% 
+  head(1) %>% 
+  pull(country)
+
+lowest_life_exp_value <- gap_07 %>% 
+  arrange(lifeExp) %>% 
+  head(1) %>% 
+  pull(lifeExp) %>% 
+  round(1)
+average_lif_exp <- gap_07 %>% 
+  summarise(weighted_mean=sum(lifeExp*pop/sum(pop))) %>% 
+  round(1)
+```
+
+
+```{r}
+
+
+ 
+country_shape <- rnaturalearth::ne_countries()
+
+gap_07 <- gap_07 %>% 
+  mutate(country_code=countrycode(country, "country.name",
+                                  "iso3c"))
+
+gap_map <- left_join(country_shape, gap_07, by=c("adm0_a3"="country_code")) %>% 
+  mutate(tooltip_label=paste(country, round(lifeExp, 1),
+         sep=" : ")) %>% 
+   ggplot()+
+   geom_sf( aes(fill=lifeExp, text=tooltip_label))+
+     theme_void()+
+     theme(legend.position="none")
+
+  gap_map_ggplotly <-   ggplotly(gap_map, tooltip="text")
+
+   
+```
+
+```{r}
+top_20_countries <- gap_07 %>% 
+  arrange(desc(lifeExp)) %>% 
+  head(20) %>% 
+  mutate(tooltip_label=paste(country, round(lifeExp, 1),
+         sep=" : ")) %>% 
+  ggplot( aes(y=reorder(country,lifeExp), x= round(lifeExp, 1),
+              fill=lifeExp,
+              text=tooltip_label))+
+  geom_col() +
+  geom_text(aes(label=round(lifeExp, 1)),
+            nudge_x = -10, 
+            colour="white")+
+  labs(
+    y="countrie",
+    x="life Exp"
+  )+
+  theme_void()+
+     theme(legend.position="none")
+
+top_20_countries_ggplotly <- ggplotly(top_20_countries,tooltip="text")
+```
+
+
+
+# Home 
+
+## Row 1 {height=25%}
+
+```{r}
+
+value_box(
+  title = "Highest life expectancy",
+  value = highest_life_expect_value,
+  showcase = bsicons::bs_icon("heart"),
+  theme = value_box_theme(bg="#567dc4"),
+   p(paste0("(", highest_life_expect_county, ")"))
+)
+```
+
+```{r}
+
+value_box(
+  title = "Lowest life expectancy",
+  value = lowest_life_exp_value,
+  showcase = bsicons::bs_icon("thermometer"),
+  theme = value_box_theme(bg="#163b80"),
+   p(paste0("(", lowest_life_exp_county, ")"))
+)
+```
+
+```{r}
+value_box(
+  title = "Average life expectancy",
+  value = average_lif_exp,
+  showcase = bsicons::bs_icon("graph-up"),
+  theme = value_box_theme(bg="#7490c4")
+)
+```
+
+## Row 2 {height=75%}
+
+### {width=70%}
+``` {r   title = "Map of countries by Life Expectancy"}
+
+gap_map_ggplotly
+```
+
+### {width=30%}
+```{r title = "Top 20 Map of countries by Life Expectancy"}
+top_20_countries_ggplotly
+```
+
+
+#   DOWNLOAD DATA   
+The data used in this dashbaoard is shown below and can be downloaded as a CSV.
+```{r}
+
+
+htmltools::browsable(
+  tagList(
+    reactable(gapminder,
+          searchable=T, 
+          filterable = T,
+      elementId = "gapminder-table"
+    ),
+     tags$button("Download as CSV", onclick = "Reactable.downloadDataCSV('gapminder-table')")
+  )
+)
+
+
+```
+
+
+# About
+
+This is from the r `Gapminder` package and is originally sources from the  Gapminder foundation. 
+
+The Gapminder Foundation is a non-profit venture registered in Stockholm, Sweden, that promotes sustainable global development and achievement of the United Nations Millennium Development Goals by increased use and understanding of statistics and other information about social, economic, and environmental development at local, national, and global levels.[1]
+Gapminder was founded in 2005 by Ola Rosling, Anna Rosling Rönnlund, and Hans Rosling.[2] The name Gapminder was derived from the "Mind the Gap" warning messages on the London Underground
+An example of one of Hans Rosling's Video is shown below
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/ZfvpBdjKjhM?si=ltbzGgqZVMMRp0pj" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+
+
+
+
+
