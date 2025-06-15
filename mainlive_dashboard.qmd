@@ -153,7 +153,7 @@ gap_map_ggplotly
 ```
 
 ### {width=30%}
-```{r title = "Top 20 Map of countries by Life Expectancy"}
+```{r title = "Top 20  countries by Life Expectancy"}
 top_20_countries_ggplotly
 ```
 
